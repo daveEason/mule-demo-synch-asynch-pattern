@@ -29,7 +29,7 @@
         <logger level="INFO" message="Message payload BEFORE is: #[payload:]"/>
         <logger level="INFO" message="Message headers BEFORE are: #[headers:*]"/>
 
-        <!-- convert payload from object to xml for jms -->
+        <!-- convert payload from object to xml for jms request/reply-->
         <mulexml:object-to-xml-transformer acceptMuleMessage="false" ignoreBadInput="false" encoding="UTF-8" mimeType="text/xml" doc:name="Object-to-Xml" doc:description="Converts a Java object to an XML representation using XStream."/>
 
         <request-reply storePrefix="mainFlow" timeout="30000">
@@ -44,16 +44,20 @@
         <logger level="INFO" message="Message payload AFTER is: #[payload:]"/>
         <logger level="INFO" message="Message headers AFTER are: #[headers:*]"/>
 
-        <!-- convert payload from xml to object for cxf -->
+        <!-- convert payload from xml to object for cxf response -->
         <mulexml:xml-to-object-transformer returnClass="com.mulesoft.demo.synch.asynch.OrderSummary" doc:name="Xml-to-Object" doc:description="Converts XML to Java bean graphs using XStream."/>
     </flow>
 
 
     <flow name="credit_card_activation_service">
-        <jms:inbound-endpoint connector-ref="jmsConnector" queue="CREDIT.CARD.ACTIVATION.SERVICE.REQUEST"/>
+        <jms:inbound-endpoint connector-ref="jmsConnector" queue="CREDIT.CARD.ACTIVATION.SERVICE.REQUEST">
+            <jms:transaction action="ALWAYS_BEGIN"/>
+        </jms:inbound-endpoint>
 
         <!-- perform credit card activation here -->
 
-        <jms:outbound-endpoint connector-ref="jmsConnector" queue="CREDIT.CARD.SERVICE.REPLY"/>
+        <jms:outbound-endpoint connector-ref="jmsConnector" queue="CREDIT.CARD.SERVICE.REPLY">
+            <jms:transaction action="ALWAYS_JOIN"/>
+        </jms:outbound-endpoint>
     </flow>
 </mule>
