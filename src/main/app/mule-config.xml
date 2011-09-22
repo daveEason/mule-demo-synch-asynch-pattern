@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:cxf="http://www.mulesoft.org/schema/mule/cxf"
+      xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+      xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+                    http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.2/mule.xsd
+                    http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/3.2/mule-http.xsd
+                    http://www.mulesoft.org/schema/mule/cxf http://www.mulesoft.org/schema/mule/cxf/3.2/mule-cxf.xsd
+                    http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/3.2/mule-jms.xsd
+                    http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/3.2/mule-xml.xsd
+                    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+    <spring:beans></spring:beans>
+
+    <jms:activemq-connector name="jmsConnector" brokerURL="tcp://localhost:61616"/>
+
+    <flow name="credit_card_order_service" doc:name="Credit Card Order Service">
+        <http:inbound-endpoint host="localhost" port="1082" path="mule/services/CreditCardOrderService" exchange-pattern="request-response">
+            <cxf:jaxws-service serviceClass="com.mulesoft.demo.synch.asynch.ICreditCardService" doc:name="Process Credit Card Order request"/>
+        </http:inbound-endpoint>
+
+        <component class="com.mulesoft.demo.synch.asynch.CreditCardServiceImpl"/>
+
+        <logger level="INFO" message="Message payload BEFORE is: #[payload:]"/>
+        <logger level="INFO" message="Message headers BEFORE are: #[headers:*]"/>
+
+        <!-- convert payload from object to xml for jms -->
+        <mulexml:object-to-xml-transformer acceptMuleMessage="false" ignoreBadInput="false" encoding="UTF-8" mimeType="text/xml" doc:name="Object-to-Xml" doc:description="Converts a Java object to an XML representation using XStream."/>
+
+        <request-reply storePrefix="mainFlow" timeout="30000">
+
+            <!-- send asynchronous request -->
+            <jms:outbound-endpoint connector-ref="jmsConnector" queue="CREDIT.CARD.ACTIVATION.SERVICE.REQUEST"/>
+
+            <!-- receive asynchronous response -->
+            <jms:inbound-endpoint connector-ref="jmsConnector" queue="CREDIT.CARD.SERVICE.REPLY"/>
+        </request-reply>
+
+        <logger level="INFO" message="Message payload AFTER is: #[payload:]"/>
+        <logger level="INFO" message="Message headers AFTER are: #[headers:*]"/>
+
+        <!-- convert payload from xml to object for cxf -->
+        <mulexml:xml-to-object-transformer returnClass="com.mulesoft.demo.synch.asynch.OrderSummary" doc:name="Xml-to-Object" doc:description="Converts XML to Java bean graphs using XStream."/>
+    </flow>
+
+
+    <flow name="credit_card_activation_service">
+        <jms:inbound-endpoint connector-ref="jmsConnector" queue="CREDIT.CARD.ACTIVATION.SERVICE.REQUEST"/>
+
+        <!-- perform credit card activation here -->
+
+        <jms:outbound-endpoint connector-ref="jmsConnector" queue="CREDIT.CARD.SERVICE.REPLY"/>
+    </flow>
+</mule>
