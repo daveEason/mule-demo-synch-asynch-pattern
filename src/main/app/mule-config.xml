@@ -17,7 +17,8 @@
 
     <spring:beans></spring:beans>
 
-    <jms:activemq-connector name="jmsConnector" brokerURL="tcp://localhost:61616"/>
+    <!-- ActiveMQ in memory instance -->
+    <jms:activemq-connector name="jmsConnector" brokerURL="vm://localhost"/>
 
     <flow name="credit_card_order_service" doc:name="Credit Card Order Service">
         <http:inbound-endpoint host="localhost" port="1082" path="mule/services/CreditCardOrderService" exchange-pattern="request-response">
