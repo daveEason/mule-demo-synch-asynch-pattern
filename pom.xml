@@ -12,7 +12,7 @@
     <description>Simple Mule application to illustrate the use of exception handling strategys</description>
 
     <properties>
-        <mule.version>3.2.0</mule.version>
+        <mule.version>3.3.0</mule.version>
         <!-- Tools properties -->
         <eclipsePluginVersion>2.5</eclipsePluginVersion>
         <vmtype>org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType</vmtype>
